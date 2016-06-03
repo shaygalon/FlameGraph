@@ -122,7 +122,7 @@ USAGE: $0 [options] infile > outfile.svg\n
 	--nametype    # name type label (default "Function:")
 	--colors      # set color palette. choices are: hot (default), mem, io,
 	              # wakeup, chain, java, js, perl, red, green, blue, aqua,
-	              # yellow, purple, orange
+	              # yellow, purple, orange, net
 	--hash        # colors are keyed by function name hash
 	--cp          # use consistent palette (palette.map)
 	--reverse     # generate stack-reversed flame graph
@@ -340,6 +340,23 @@ sub color {
 	}
 
 	# multi palettes
+	if (defined $type and $type eq "net") {
+		if ($name =~ /^_*(tcp_|ip_|inet_|sock_)/) {		# tcp stack related
+			$type = "orange";
+ 		} elsif ($name =~ /::/) {	# C++
+			$type = "blue";
+		} elsif ($name =~ /[^b]lock/) {	# locking
+			$type = "red"
+		} elsif ($name =~ m:_\[k\]:) {	# kernel
+			$type = "yellow"
+        } elsif ($name =~ m:(/|\.):) {       # Java (match "/" in path)
+            $type = "purple";
+            $type = "aqua" if $name =~ m/_\[i\]/; #inline
+		} else {			# system
+			$type = "green";
+		}
+		# fall-through to color palettes
+	}
 	if (defined $type and $type eq "java") {
 		if ($name =~ m:(/|\.):) {		# Java (match "/" in path)
 			$type = "green";
@@ -397,7 +414,7 @@ sub color {
 	# color palettes
 	if (defined $type and $type eq "red") {
 		my $r = 200 + int(55 * $v1);
-		my $x = 50 + int(80 * $v1);
+		my $x = 5 + int($v1);
 		return "rgb($r,$x,$x)";
 	}
 	if (defined $type and $type eq "green") {
